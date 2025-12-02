@@ -1,0 +1,28 @@
+{% snapshot snp_customers %}
+
+{{
+    config(
+        target_schema='snapshots', -- Onde o dbt vai guardar a tabela física com histórico
+        unique_key='customer_id',   -- A chave natural que identifica um cliente único
+        
+        strategy='check',          -- Estratégia: verificar mudanças em colunas específicas
+        check_cols=['company_name', 'contact_name', 'contact_title', 'address', 'city', 'region', 'postal_code', 'country_name', 'phone', 'fax'] -- Lista de colunas que, se mudarem, disparam uma nova versão histórica
+    )
+}}
+
+-- A query que seleciona os dados brutos da fonte
+select
+    CustomerID as customer_id,
+    CompanyName as company_name,
+    ContactName as contact_name,
+    ContactTitle as contact_title,
+    Address as address,
+    City as city,
+    Region as region,
+    PostalCode as postal_code,
+    Country as country_name,
+    Phone as phone,
+    Fax as fax
+from {{ source('northwind', 'Customers') }}
+
+{% endsnapshot %}
