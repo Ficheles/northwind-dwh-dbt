@@ -1,0 +1,32 @@
+version: 2
+
+sources:
+  - name: northwind
+    schema: northwind
+    tables:
+      - name: Customers
+        description: "Clientes da empresa"
+      - name: Orders
+        description: "Pedidos realizados"
+      - name: Order Details
+        identifier: "`Order Details`"
+        description: "Itens dos pedidos"
+        quoting:
+          identifier: true
+      - name: Products
+        description: "Produtos vendidos"
+      - name: Categories
+        description: "Categorias de produtos"
+      - name: Suppliers
+        description: "Fornecedores"
+      - name: Employees
+        description: "Funcionários"
+      - name: Shippers
+        description: "Transportadoras"
+  - name: external_data
+    schema: external_data
+    tables: 
+      - name: ext_iso_countries
+        description: "Dados externos - Países ISO"
+      - name: ext_exchange_rates
+        description: "Dados externos - Taxas de câmbio"

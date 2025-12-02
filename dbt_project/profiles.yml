@@ -1,0 +1,12 @@
+northwind_dwh:
+  target: dev
+  outputs:
+    dev:
+      type: mysql
+      server: mysql_db
+      port: "{{ env_var('DBT_MYSQL_PORT', '3306') | as_number }}"
+      schema: "{{ env_var('DBT_MYSQL_SCHEMA', 'dwh') }}"
+      username: "{{ env_var('DBT_MYSQL_USER') }}"
+      password: "{{ env_var('DBT_MYSQL_PASSWORD') }}"
+      charset: utf8mb4
+      materialized: table

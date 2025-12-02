@@ -1,0 +1,58 @@
+# dbt_project.yml
+
+# 1. Configurações Básicas do Projeto
+name: 'northwind_dwh'
+version: '1.0.0'
+config-version: 2
+
+# Define o perfil de conexão (deve corresponder ao nome em profiles.yml)
+profile: 'northwind_dwh'
+
+# Define o modelo de destino (onde os artefatos serão construídos)
+# O modelo será sempre o banco de dados 'northwind_dwh_db' definido no profiles.yml
+model-paths: ["models"]
+seed-paths: ["seeds"]
+test-paths: ["tests"]
+analysis-paths: ["analysis"]
+macro-paths: ["macros"]
+snapshot-paths: ["snapshots"]
+
+# Especifica o que deve ser excluído do build, como arquivos temporários ou modelos obsoletos.
+clean-targets:
+  - "target"
+  - "dbt_packages"
+
+# 2. Configurações de Modelos (Materialização e Estratégia)
+# Define como os modelos devem ser construídos no DWH.
+
+models:
+  # Configuração Padrão para todos os modelos no projeto
+  northwind_dwh:
+    # 2.1 Configuração Geral (Aplicada a todos os modelos, a menos que substituída)
+    # Por padrão, todos os modelos serão criados como tabelas (table).
+    # 'table' é ideal para dimensões e fatos, pois permite consultas mais rápidas.
+    +materialized: table
+    +schema: dwh # Define o schema padrão dentro do northwind_dwh_db (mude se for usar um schema diferente do public)
+    
+    # 2.2 Estratégia para a camada de Staging (Limpeza/Padronização)
+    # Modelos de staging são usados apenas como intermediários; 
+    # views são mais eficientes, pois não armazenam dados duplicados.
+    staging:
+      +materialized: view
+      +schema: dwh_staging # Cria um schema 'staging' para organizar os modelos de base.
+    
+    # Camada Core (DWH) - Tabelas no schema 'dwh'
+    marts:
+      +materialized: table
+      core:
+        +schema: dwh
+      sales:
+        +schema: dwh_mart_sales
+      products:
+        +schema: dwh_mart_products
+      customers:
+        +schema: dwh_mart_customers
+
+snapshots:
+  northwind_dwh:
+    +schema: snapshots
