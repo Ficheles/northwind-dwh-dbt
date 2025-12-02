@@ -1,0 +1,48 @@
+version: '3.8'
+
+x-mysql-config: &mysql-config  
+  MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+  MYSQL_DATABASE: ${MYSQL_DATABASE} # DB Fonte (OLTP)
+  MYSQL_USER: ${MYSQL_USER}
+  MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+
+
+services:
+
+  mysql_db:
+    image: mysql:8.0
+    container_name: northwind_db
+    environment:
+      <<: *mysql-config 
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql # Persistência dos dados
+      - ./sources/init/00-init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
+      # - ./sources/northwind:/docker-entrypoint-initdb.d/northwind:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+
+  # Serviço 2: Container DBT (Transformação de dados)
+  dbt:
+    build:
+      context: . 
+      dockerfile: infra/dbt/Dockerfile
+    container_name: northwind_dbt
+    command: bash -c "dbt debug --target dev && tail -f /dev/null"
+    volumes:      
+      - ./dbt_project:/usr/app
+    environment:      
+      DBT_PROFILES_DIR: /usr/app
+      <<: *mysql-config      
+    depends_on:
+      mysql_db:
+        condition: service_healthy 
+
+volumes:
+  mysql_data:

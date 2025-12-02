@@ -1,0 +1,24 @@
+{
+    "name": "dbt MySQL Dev Container",
+    "dockerComposeFile": "../docker-compose.yaml",
+    "service": "dbt",
+    "workspaceFolder": "/usr/app",
+    
+    "customizations": {
+        "vscode": {
+            "extensions": [
+                "innoverio.vscode-dbt-power-user",
+                "bastienboutonnet.vscode-dbt",
+                "ms-azuretools.vscode-docker",
+                "eamodio.gitlens"
+            ],
+            "settings": {
+                "files.associations": {
+                    "*.sql": "jinja-sql"
+                },
+                "dbt.dbtPythonPathOverride": "/usr/local/bin/python"
+            }
+        }
+    },
+    "remoteUser": "root"
+}
