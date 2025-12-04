@@ -1,286 +1,464 @@
-# Projeto de Engenharia de Dados: Data Warehouse e Data Marts
+# Data Warehouse com Data Marts - Projeto Northwind
 
-Este projeto implementa um pipeline de dados completo para a criação de um **Data Warehouse** (DW) com foco em **Data Marts**. Utilizamos o banco de dados Northwind como fonte de dados transacional (OLTP), dados externos simulados e o dbt para transformar os dados em um modelo dimensional pronto para análise.
+## 📋 Visão Geral
 
-## 📂 Estrutura do Projeto
+Este projeto demonstra a construção de um **Data Warehouse moderno** utilizando a arquitetura de **Data Marts**, partindo do clássico banco de dados Northwind como fonte transacional (OLTP). O objetivo é transformar dados operacionais em um modelo analítico dimensional, permitindo análises de negócio eficientes.
 
-A estrutura do projeto foi organizada para separar as responsabilidades entre **infraestrutura**, **dados de origem** e **transformação**:
+### Propósito do Projeto
+
+O projeto serve como guia prático para:
+- Implementar um pipeline **ELT** (Extract, Load, Transform) completo
+- Criar múltiplos **Data Marts** especializados por área de negócio
+- Aplicar **modelagem dimensional** (Star Schema) usando dbt
+- Estabelecer camadas de dados (Bronze, Silver, Gold) seguindo boas práticas modernas
+- Preparar dados para consumo por ferramentas de BI e análise
+
+## 🏛️ Arquitetura do Projeto
+
+### Camadas de Dados
+
+```
+┌─────────────────────────────────────────────────────┐
+│  CAMADA BRONZE (Raw)                                │
+│  Banco: northwind (OLTP)                            │
+│  Tabelas: Orders, Customers, Products, etc.         │
+└─────────────────────────────────────────────────────┘
+                      ↓ dbt (Staging)
+┌─────────────────────────────────────────────────────┐
+│  CAMADA SILVER (Staging)                            │
+│  Local: models/staging/                             │
+│  Função: Limpeza, padronização, tipagem             │
+└─────────────────────────────────────────────────────┘
+                      ↓ dbt (Marts)
+┌─────────────────────────────────────────────────────┐
+│  CAMADA GOLD (Data Marts)                           │
+│  Local: models/marts/                               │
+│  Modelo: Star Schema (Fatos + Dimensões)            │
+│  Marts: Sales, Logistics, Finance, Marketing        │
+└─────────────────────────────────────────────────────┘
+```
+
+### Estrutura de Diretórios
 
 ```text
 .
-├── docker-compose.yml      # Orquestração dos containers (MySQL, dbt)
-├── README.md               # Documentação do projeto
-├── .env.example            # Exemplo de variáveis de ambiente
+├── docker-compose.yml          # Orquestração dos containers
+├── README.md                   # Documentação principal
+├── .env.example                # Template de variáveis de ambiente
 │
-├── sources/                # Scripts e dados para popular os bancos de origem
-│   ├── northwind/          # Scripts SQL do banco Northwind (OLTP)
-│   │   ├── instnwnd.sql    # Script para criar e popular o banco Northwind
-│   └── init/               # Scripts de inicialização do MySQL
-│       └── init.sql        # Criação de bancos e permissões
+├── sources/                    # Dados de origem
+│   ├── northwind/
+│   │   └── instnwnd.sql        # Script de criação do banco Northwind
+│   └── init/
+│       └── init.sql            # Inicialização e permissões MySQL
 │
-├── transform/              # Projeto dbt para transformação de dados
-│   ├── dbt_project.yml     # Configuração principal do dbt
-│   ├── profiles.yml        # Configuração de conexão do dbt
-│   ├── seeds/              # Dados estáticos (ex: países, taxas de câmbio)
-│   └── models/             # Modelos SQL (Staging, Marts)
-│       ├── staging/        # Camada de limpeza e padronização
-│       └── marts/          # Camada final (modelo dimensional)
-│
-└── data/                   # Diretório para dados locais (opcional)
+└── transform/                  # Projeto dbt
+    ├── dbt_project.yml         # Configuração do dbt
+    ├── profiles.yml            # Perfis de conexão
+    ├── seeds/                  # Dados estáticos (CSV)
+    └── models/
+        ├── staging/            # Modelos de staging (Silver)
+        └── marts/              # Data Marts (Gold)
+            ├── sales/          # Mart de Vendas
+            ├── logistics/      # Mart de Logística
+            ├── finance/        # Mart Financeiro
+            └── marketing/      # Mart de Marketing
 ```
 
-## 🚀 Como Executar o Projeto
+## 🚀 Como Executar
 
 ### Pré-requisitos
 
-- Docker e Docker Compose instalados
-- Opcional: Editor de código como VS Code com extensão para dbt
+- **Docker** e **Docker Compose** instalados ([Guia de instalação](https://docs.docker.com/get-docker/))
+- Mínimo 4GB de RAM disponível
+- (Opcional) VS Code com extensão dbt Power User
 
 ### Passo a Passo
 
-**1. Clonar o repositório:**
+#### 1. Clone o Repositório
 
 ```bash
 git clone <url-do-repositorio>
 cd <nome-do-repositorio>
 ```
 
-**2. Configurar variáveis de ambiente:**
-
-Copie o arquivo `.env.example` para `.env` e ajuste as variáveis conforme necessário:
+#### 2. Configure as Variáveis de Ambiente
 
 ```bash
 cp .env.example .env
 ```
 
-**3. Subir os containers:**
+Edite o arquivo `.env` conforme necessário. Exemplo de conteúdo:
 
-Este comando irá inicializar o MySQL e o ambiente dbt:
+```env
+MYSQL_ROOT_PASSWORD=root_password
+MYSQL_DATABASE=northwind
+MYSQL_USER=dbt_user
+MYSQL_PASSWORD=dbt_password
+```
+
+#### 3. Inicie os Containers
 
 ```bash
 docker-compose up -d --build
 ```
 
-**4. Criar e popular o banco Northwind:**
+Aguarde alguns segundos para que o MySQL inicialize completamente.
 
-O banco Northwind será criado automaticamente pelo script `instnwnd.sql` durante a inicialização do MySQL.
+#### 4. Verifique os Containers
 
-**5. Testar a conexão do dbt:**
+```bash
+docker-compose ps
+```
 
-Acesse o container do dbt e teste a conexão com o banco:
+Você deve ver os containers `northwind_mysql` e `northwind_dbt` em execução.
+
+#### 5. Valide a Conexão do dbt
+
+Entre no container do dbt:
 
 ```bash
 docker exec -it northwind_dbt bash
+```
+
+Teste a conexão:
+
+```bash
 dbt debug
 ```
 
-**6. Executar as transformações:**
+Se tudo estiver correto, você verá `All checks passed!`.
 
-Rode os modelos dbt para criar o Data Warehouse:
+#### 6. Execute as Transformações
+
+Instale as dependências do dbt:
+
+```bash
+dbt deps
+```
+
+Execute os modelos de staging:
+
+```bash
+dbt run --models staging
+```
+
+Execute os Data Marts:
+
+```bash
+dbt run --models marts
+```
+
+Ou execute tudo de uma vez:
 
 ```bash
 dbt run
 ```
 
-**7. Visualizar os dados:**
+#### 7. Execute os Testes de Qualidade
 
-Conecte uma ferramenta de BI (ex: Power BI, Tableau) ao banco MySQL para explorar os dados transformados.
-
-## 🏗️ Arquitetura do Data Warehouse (Foco em Data Marts)
-
-O projeto segue a arquitetura **ELT** (Extract, Load, Transform), com três camadas principais de dados:
-
-### 1. Camada Bronze (Raw / Sources)
-
-- **Onde:** Banco de dados MySQL (`northwind`)
-- **O que é:** Dados brutos extraídos do sistema transacional (OLTP) e de fontes externas
-- **Exemplo:** Tabelas como `Orders`, `Customers`, `Products`
-
-### 2. Camada Silver (Staging)
-
-- **Onde:** Diretório `models/staging/` no dbt
-- **O que é:** Dados limpos e padronizados, prontos para transformação
-- **Exemplo:** Arquivo `stg_orders.sql` que renomeia colunas e ajusta tipos de dados
-
-### 3. Camada Gold (Data Marts)
-
-- **Onde:** Diretório `models/marts/` no dbt
-- **O que é:** Modelo dimensional (Star Schema) com tabelas de fatos e dimensões
-- **Fatos:** Contêm métricas e eventos (ex: `fct_orders`)
-- **Dimensões:** Contêm atributos descritivos (ex: `dim_customers`, `dim_products`)
-
-## 🎯 Como Criar um Data Warehouse Focado em Data Marts
-
-### Conceito de Data Marts
-
-Um **Data Mart** é um subconjunto do Data Warehouse focado em uma área específica de negócio (ex: vendas, marketing, finanças). A abordagem de Data Marts oferece:
-
-- **Agilidade:** Desenvolvimento mais rápido e iterativo
-- **Especialização:** Modelos otimizados para cada departamento
-- **Performance:** Consultas mais rápidas em datasets menores
-- **Governança:** Controle de acesso granular por área
-
-### Estratégia de Implementação
-
-**Passo 1: Identificar os Data Marts Necessários**
-
-Exemplos de Data Marts para o projeto Northwind:
-- **Vendas:** Análise de pedidos, produtos e clientes
-- **Logística:** Análise de entregas e fornecedores
-- **Financeiro:** Análise de receitas e custos
-- **Marketing:** Análise de clientes e segmentação
-
-**Passo 2: Definir o Modelo Dimensional (Star Schema)**
-
-Para cada Data Mart, crie:
-- **1 Tabela Fato:** Contém métricas e chaves estrangeiras
-- **N Tabelas Dimensão:** Contêm atributos descritivos
-
-Exemplo para Data Mart de Vendas:
-```
-Fato: fct_sales
-    - order_id (PK)
-    - customer_key (FK)
-    - product_key (FK)
-    - date_key (FK)
-    - quantity
-    - unit_price
-    - total_amount
-
-Dimensões:
-    - dim_customers
-    - dim_products
-    - dim_dates
-    - dim_employees
+```bash
+dbt test
 ```
 
-**Passo 3: Implementar no dbt**
+#### 8. Gere a Documentação
 
-Organize os modelos por Data Mart:
-
-```text
-models/
-├── staging/
-│   ├── stg_orders.sql
-│   ├── stg_customers.sql
-│   └── stg_products.sql
-│
-└── marts/
-        ├── sales/              # Data Mart de Vendas
-        │   ├── fct_sales.sql
-        │   ├── dim_customers.sql
-        │   └── dim_products.sql
-        │
-        ├── logistics/          # Data Mart de Logística
-        │   ├── fct_shipments.sql
-        │   └── dim_shippers.sql
-        │
-        └── finance/            # Data Mart Financeiro
-                └── fct_revenue.sql
+```bash
+dbt docs generate
+dbt docs serve --port 8080
 ```
 
-**Passo 4: Criar Modelos de Staging**
+Acesse `http://localhost:8080` para visualizar a documentação interativa.
 
-Limpe e padronize os dados de origem:
+#### 9. Conecte uma Ferramenta de BI
+
+Use as seguintes credenciais para conectar Power BI, Tableau ou Metabase:
+
+- **Host:** `localhost`
+- **Porta:** `3306`
+- **Database:** `northwind`
+- **Usuário:** `dbt_user` (conforme `.env`)
+- **Senha:** `dbt_password` (conforme `.env`)
+
+## 🎯 Conceito de Data Marts
+
+### O que são Data Marts?
+
+**Data Marts** são subconjuntos especializados do Data Warehouse, focados em áreas específicas de negócio. Cada Data Mart contém apenas os dados relevantes para seu domínio.
+
+### Vantagens da Abordagem por Data Marts
+
+| Vantagem | Descrição |
+|----------|-----------|
+| **Agilidade** | Desenvolvimento iterativo e entregas incrementais |
+| **Performance** | Consultas mais rápidas em datasets menores e focados |
+| **Governança** | Controle de acesso granular por departamento |
+| **Manutenção** | Mudanças isoladas não afetam outros Data Marts |
+| **Especialização** | Modelos otimizados para necessidades específicas |
+
+### Data Marts Implementados
+
+#### 🛒 Sales (Vendas)
+- **Foco:** Análise de vendas, produtos e clientes
+- **Fatos:** `fct_sales`
+- **Dimensões:** `dim_customers`, `dim_products`, `dim_dates`, `dim_employees`
+- **Métricas:** Receita, quantidade, desconto, ticket médio
+
+#### 🚚 Logistics (Logística)
+- **Foco:** Análise de entregas e desempenho de fornecedores
+- **Fatos:** `fct_shipments`
+- **Dimensões:** `dim_shippers`, `dim_suppliers`, `dim_dates`
+- **Métricas:** Tempo de entrega, custo de frete, taxa de atraso
+
+#### 💰 Finance (Financeiro)
+- **Foco:** Análise de receitas, custos e lucratividade
+- **Fatos:** `fct_revenue`
+- **Dimensões:** `dim_customers`, `dim_products`, `dim_dates`
+- **Métricas:** Receita bruta, margem de lucro, custos operacionais
+
+#### 📊 Marketing (Marketing)
+- **Foco:** Segmentação de clientes e análise de campanhas
+- **Fatos:** `fct_customer_behavior`
+- **Dimensões:** `dim_customer_segments`, `dim_regions`
+- **Métricas:** Lifetime value, taxa de retenção, churn
+
+## 🔧 Modelagem Dimensional (Star Schema)
+
+### Exemplo: Data Mart de Vendas
+
+```sql
+-- Tabela Fato
+fct_sales
+├── sales_key (PK)
+├── customer_key (FK) → dim_customers
+├── product_key (FK) → dim_products
+├── date_key (FK) → dim_dates
+├── employee_key (FK) → dim_employees
+├── quantity
+├── unit_price
+├── discount
+└── total_amount
+
+-- Dimensões
+dim_customers (customer_key, customer_id, company_name, country, ...)
+dim_products (product_key, product_id, product_name, category, ...)
+dim_dates (date_key, date_value, year, quarter, month, ...)
+dim_employees (employee_key, employee_id, full_name, title, ...)
+```
+
+### Implementação no dbt
+
+**Staging (Limpeza):**
 
 ```sql
 -- models/staging/stg_orders.sql
 select
-        order_id,
-        customer_id,
-        employee_id,
-        order_date,
-        shipped_date,
-        ship_via as shipper_id,
-        freight
+    order_id,
+    customer_id,
+    employee_id,
+    order_date,
+    shipped_date,
+    ship_via as shipper_id,
+    freight
 from {{ source('northwind', 'orders') }}
 where order_date is not null
 ```
 
-**Passo 5: Criar Tabelas Dimensão**
+**Dimensão:**
 
 ```sql
 -- models/marts/sales/dim_customers.sql
 select
-        {{ dbt_utils.generate_surrogate_key(['customer_id']) }} as customer_key,
-        customer_id,
-        company_name,
-        contact_name,
-        city,
-        country,
-        region
+    {{ dbt_utils.generate_surrogate_key(['customer_id']) }} as customer_key,
+    customer_id,
+    company_name,
+    contact_name,
+    city,
+    country,
+    region
 from {{ ref('stg_customers') }}
 ```
 
-**Passo 6: Criar Tabelas Fato**
+**Fato:**
 
 ```sql
 -- models/marts/sales/fct_sales.sql
 select
-        {{ dbt_utils.generate_surrogate_key(['o.order_id', 'od.product_id']) }} as sales_key,
-        o.order_id,
-        c.customer_key,
-        p.product_key,
-        d.date_key,
-        od.quantity,
-        od.unit_price,
-        od.discount,
-        (od.quantity * od.unit_price * (1 - od.discount)) as total_amount
+    {{ dbt_utils.generate_surrogate_key(['o.order_id', 'od.product_id']) }} as sales_key,
+    o.order_id,
+    c.customer_key,
+    p.product_key,
+    d.date_key,
+    e.employee_key,
+    od.quantity,
+    od.unit_price,
+    od.discount,
+    (od.quantity * od.unit_price * (1 - od.discount)) as total_amount
 from {{ ref('stg_orders') }} o
 join {{ ref('stg_order_details') }} od on o.order_id = od.order_id
 join {{ ref('dim_customers') }} c on o.customer_id = c.customer_id
 join {{ ref('dim_products') }} p on od.product_id = p.product_id
 join {{ ref('dim_dates') }} d on o.order_date = d.date_value
+join {{ ref('dim_employees') }} e on o.employee_id = e.employee_id
 ```
 
-**Passo 7: Documentar e Testar**
+## 🛠️ Melhores Práticas para Data Marts
+
+### 1. Convenções de Nomenclatura
+
+```yaml
+Padrão de nomes:
+  Staging:   stg_<nome_tabela>       # ex: stg_orders
+  Dimensões: dim_<nome_dimensao>     # ex: dim_customers
+  Fatos:     fct_<nome_metrica>      # ex: fct_sales
+```
+
+### 2. Chaves Substitutas (Surrogate Keys)
+
+Use sempre chaves substitutas geradas automaticamente:
+
+```sql
+{{ dbt_utils.generate_surrogate_key(['customer_id']) }} as customer_key
+```
+
+**Vantagens:**
+- Independência da fonte de dados
+- Performance em joins
+- Suporte a SCD (Slowly Changing Dimensions)
+
+### 3. Documentação Completa
 
 ```yaml
 # models/marts/sales/schema.yml
 version: 2
 
 models:
-    - name: fct_sales
-        description: "Tabela fato de vendas"
-        columns:
-            - name: sales_key
-                description: "Chave primária"
-                tests:
-                    - unique
-                    - not_null
-            - name: total_amount
-                description: "Valor total da venda"
-                tests:
-                    - not_null
+  - name: fct_sales
+    description: "Fato contendo todas as transações de vendas"
+    columns:
+      - name: sales_key
+        description: "Chave primária da tabela fato"
+        tests:
+          - unique
+          - not_null
+      - name: customer_key
+        description: "Chave estrangeira para dim_customers"
+        tests:
+          - relationships:
+              to: ref('dim_customers')
+              field: customer_key
 ```
 
-**Passo 8: Executar e Validar**
+### 4. Testes de Qualidade
 
-```bash
-dbt run --models marts.sales
-dbt test --models marts.sales
+Implemente testes em todas as tabelas:
+
+```yaml
+tests:
+  - unique                    # Chaves primárias
+  - not_null                  # Campos obrigatórios
+  - relationships             # Integridade referencial
+  - accepted_values           # Valores permitidos
+  - dbt_utils.expression_is_true  # Regras de negócio
 ```
 
-## 🛠️ Boas Práticas para Data Marts
+### 5. Materialização Adequada
 
-1. **Nomeação Consistente:** Use prefixos `fct_` e `dim_` para identificar fatos e dimensões
-2. **Chaves Substitutas:** Use chaves surrogate em vez de chaves naturais
-3. **Documentação:** Documente todas as tabelas e colunas no arquivo `schema.yml`
-4. **Testes:** Implemente testes de qualidade de dados
-5. **Incrementalidade:** Use modelos incrementais para tabelas fato grandes
-6. **Materialização:** Configure materializações adequadas (table, view, incremental)
+```yaml
+# dbt_project.yml
+models:
+  staging:
+    +materialized: view       # Views para staging
+  marts:
+    dimensions:
+      +materialized: table    # Tabelas para dimensões
+    facts:
+      +materialized: incremental  # Incremental para fatos grandes
+```
+
+### 6. Modelos Incrementais
+
+Para tabelas fato com grandes volumes:
+
+```sql
+{{
+  config(
+    materialized='incremental',
+    unique_key='sales_key',
+    on_schema_change='fail'
+  )
+}}
+
+select * from {{ ref('stg_orders') }}
+
+{% if is_incremental() %}
+  where order_date > (select max(order_date) from {{ this }})
+{% endif %}
+```
+
+### 7. Organização por Domínio
+
+```text
+models/marts/
+├── customers/         # Tudo relacionado a customers
+├── products/          # Tudo relacionado a produtos
+├── sales/             # Tudo relacionado a sales
+└── _shared/           # Dimensões compartilhadas (dim_dates)
+```
 
 ## 📊 Ferramentas Utilizadas
 
-- **Docker:** Containerização do ambiente
-- **MySQL:** Banco de dados transacional e analítico
-- **dbt (data build tool):** Transformação de dados e modelagem
-- **Python:** Scripts auxiliares para ingestão de dados
-- **Power BI/Tableau:** Visualização dos dados transformados
+| Ferramenta | Função | Link |
+|------------|--------|------|
+| **Docker** | Containerização do ambiente | [docker.com](https://www.docker.com/) |
+| **MySQL** | Banco de dados (OLTP e OLAP) | [mysql.com](https://www.mysql.com/) |
+| **dbt** | Transformação e modelagem de dados | [getdbt.com](https://www.getdbt.com/) |
+| **Python** | Scripts auxiliares de ingestão | [python.org](https://www.python.org/) |
+
+## 🐛 Solução de Problemas
+
+### Container MySQL não inicia
+
+```bash
+# Verifique os logs
+docker-compose logs mysql
+
+# Remova volumes e recrie
+docker-compose down -v
+docker-compose up -d
+```
+
+### dbt não conecta ao MySQL
+
+```bash
+# Verifique se o MySQL está pronto
+docker exec -it northwind_mysql mysql -u root -p
+
+# Valide o profiles.yml
+cat transform/profiles.yml
+```
+
+### Modelos dbt com erro
+
+```bash
+# Execute com logs detalhados
+dbt run --debug
+
+# Compile o modelo para ver o SQL gerado
+dbt compile --models <nome_modelo>
+```
 
 ## 📚 Referências
 
-- [Documentação do dbt](https://docs.getdbt.com/)
-- [Northwind Database](https://github.com/microsoft/sql-server-samples/tree/master/samples/databases/northwind-pubs)
-- [Docker Compose](https://docs.docker.com/compose/)
-- [Kimball's Data Warehouse Toolkit](https://www.kimballgroup.com/)
+- [Documentação oficial do dbt](https://docs.getdbt.com/)
+- [Northwind Database - Microsoft](https://github.com/microsoft/sql-server-samples/tree/master/samples/databases/northwind-pubs)
+- [Docker Compose Reference](https://docs.docker.com/compose/)
+- [The Data Warehouse Toolkit - Ralph Kimball](https://www.kimballgroup.com/)
+- [dbt Best Practices](https://docs.getdbt.com/guides/best-practices)
+- [Star Schema: The Complete Reference - Christopher Adamson](https://www.kimballgroup.com/)
+- [Dimensional Modeling Techniques](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
+
+## 📝 Licença
+
+Este projeto é destinado a fins educacionais.
+
