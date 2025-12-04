@@ -1,6 +1,8 @@
 -- =============================================
 -- TABELAS
 -- =============================================
+USE northwind;
+
 
 -- Tabela: Categories
 CREATE TABLE Categories (

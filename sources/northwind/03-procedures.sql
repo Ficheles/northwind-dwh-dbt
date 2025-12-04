@@ -1,5 +1,5 @@
 /* The following adds stored procedures */
-
+USE northwind;
 -- MySQL Stored Procedures for Northwind Database
 
 -- Set delimiter for procedure creation

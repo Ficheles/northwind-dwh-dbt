@@ -1,3 +1,5 @@
+USE northwind;
+
 -- Your INSERT statements here
 INSERT INTO Categories (CategoryID, CategoryName, Description) VALUES
 (1, 'Beverages', 'Soft drinks, coffees, teas, beers, and ales'),

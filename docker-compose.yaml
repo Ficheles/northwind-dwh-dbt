@@ -19,7 +19,9 @@ services:
     volumes:
       - mysql_data:/var/lib/mysql # Persistência dos dados
       - ./sources/init/00-init.sql:/docker-entrypoint-initdb.d/00-init.sql:ro
-      # - ./sources/northwind:/docker-entrypoint-initdb.d/northwind:ro
+      - ./sources/northwind/01-create_tables.sql:/docker-entrypoint-initdb.d/01-create_tables.sql:ro
+      - ./sources/northwind/02-populate.sql:/docker-entrypoint-initdb.d/02-populate.sql:ro
+      - ./sources/northwind/03-procedures.sql:/docker-entrypoint-initdb.d/03-procedures.sql:ro
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 10s
@@ -42,7 +44,28 @@ services:
       <<: *mysql-config      
     depends_on:
       mysql_db:
-        condition: service_healthy 
+        condition: service_healthy
+
+  metabase:
+    image: metabase/metabase:latest
+    container_name: northwind_metabase
+    ports:
+      - "3000:3000"
+    environment:
+      # Configurações opcionais
+      JAVA_TIMEZONE: America/Sao_Paulo
+    volumes:
+      - metabase_data:/metabase-data
+    depends_on:
+      mysql_db:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s         
 
 volumes:
   mysql_data:
+  metabase_data:
