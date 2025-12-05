@@ -29,7 +29,7 @@ O processo de transformação foi implementado em **três camadas**:
 
 | Campo Calculado | Fórmula | Justificativa |
 |-----------------|---------|---------------|
-| `days_to_ship` | `ShippedDate - OrderDate` | Medir eficiência logística |
+| `days_to_ship` | `DATEDIFF(ShippedDate, OrderDate)` | Medir eficiência logística |
 | `is_late_shipment` | `ShippedDate > RequiredDate` | KPI de SLA de entrega |
 | `order_status` | CASE WHEN | Classificação para dashboards |
 | `order_year/month/quarter` | Extraído de OrderDate | Facilitar análises temporais |
@@ -74,7 +74,8 @@ O processo de transformação foi implementado em **três camadas**:
 
 ### 3.3 Dimensão de Funcionários (dim_employees)
 - **Hierarquia desnormalizada:** `manager_name`
-- **Justificativa:** O auto-relacionamento (ReportsTo) foi resolvido com um LEFT JOIN, permitindo análise de vendas por equipe.
+- **Território desnormalizado:** `territory_description`, `region_description`
+- **Justificativa:** O auto-relacionamento (ReportsTo) e múltiplos joins de território foram resolvidos, permitindo análise de vendas por equipe e região sem joins adicionais.
 
 ---
 
@@ -109,16 +110,17 @@ O processo de transformação foi implementado em **três camadas**:
 - **Objetivo:** Análise de performance comercial
 - **Usuários:** Diretoria, Gerentes de Vendas
 - **Métricas principais:** Receita, ticket médio, taxa de atraso
+- **Granularidade:** Agregação por ano/mês/país
 
 ### 5.2 Mart de Produtos (mart_product_performance)
 - **Objetivo:** Gestão de portfólio e estoque
 - **Usuários:** Compradores, Gerentes de Produto
-- **Métricas principais:** Vendas por categoria, ranking, rotatividade
+- **Métricas principais:** Vendas por categoria, ranking, rotatividade, margem de desconto
 
 ### 5.3 Mart de Clientes (mart_customer_analytics)
 - **Objetivo:** CRM e segmentação
 - **Usuários:** Marketing, Customer Success
-- **Métricas principais:** RFM, LTV, segmentação
+- **Métricas principais:** RFM (Recency, Frequency, Monetary), LTV, segmentação por país e continente
 
 ---
 
@@ -140,3 +142,5 @@ O processo de transformação foi implementado em **três camadas**:
 2. Adicionar documentação inline nos modelos (`dbt docs generate`)
 3. Configurar snapshots para dimensões SCD Type 2
 4. Criar macros para conversão de moeda usando `ext_exchange_rates`
+5. Implementar testes de integridade referencial entre fatos e dimensões
+6. Adicionar métricas de performance e tempo de execução dos modelos

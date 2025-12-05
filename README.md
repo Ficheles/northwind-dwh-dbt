@@ -4,6 +4,15 @@
 
 Este projeto demonstra a construção de um **Data Warehouse moderno** utilizando a arquitetura de **Data Marts**, partindo do clássico banco de dados Northwind como fonte transacional (OLTP). O objetivo é transformar dados operacionais em um modelo analítico dimensional, permitindo análises de negócio eficientes.
 
+### 🔗 Links Úteis
+
+| Recurso | Link |
+|---------|------|
+| 📊 Apresentação | [Ver Apresentação](docs/Data_Warehouse_com_Data_Marts.pdf) |
+| 📄 Relatório Técnico | [RELATORIO_TECNICO.md](docs/RELATORIO_TECNICO.md) |
+| 🐙 Repositório | [GitHub](https://github.com/Ficheles/northwind-dwh-dbt) |
+
+
 ### Propósito do Projeto
 
 O projeto serve como guia prático para:
@@ -12,6 +21,8 @@ O projeto serve como guia prático para:
 - Aplicar **modelagem dimensional** (Star Schema) usando dbt
 - Estabelecer camadas de dados (Bronze, Silver, Gold) seguindo boas práticas modernas
 - Preparar dados para consumo por ferramentas de BI e análise
+- Demonstrar o uso de contêineres Docker para orquestração do ambiente
+- Foi utilizado para a construção das Analises o **Metabase** como ferramenta de BI.
 
 ## 🏛️ Arquitetura do Projeto
 
@@ -34,7 +45,7 @@ O projeto serve como guia prático para:
 │  CAMADA GOLD (Data Marts)                           │
 │  Local: models/marts/                               │
 │  Modelo: Star Schema (Fatos + Dimensões)            │
-│  Marts: Sales, Logistics, Finance, Marketing        │
+│  Marts: Sales, Customers, Products        │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -42,28 +53,121 @@ O projeto serve como guia prático para:
 
 ```text
 .
-├── docker-compose.yml          # Orquestração dos containers
-├── README.md                   # Documentação principal
-├── .env.example                # Template de variáveis de ambiente
-│
-├── sources/                    # Dados de origem
-│   ├── northwind/
-│   │   └── instnwnd.sql        # Script de criação do banco Northwind
-│   └── init/
-│       └── init.sql            # Inicialização e permissões MySQL
-│
-└── transform/                  # Projeto dbt
-    ├── dbt_project.yml         # Configuração do dbt
-    ├── profiles.yml            # Perfis de conexão
-    ├── seeds/                  # Dados estáticos (CSV)
-    └── models/
-        ├── staging/            # Modelos de staging (Silver)
-        └── marts/              # Data Marts (Gold)
-            ├── sales/          # Mart de Vendas
-            ├── logistics/      # Mart de Logística
-            ├── finance/        # Mart Financeiro
-            └── marketing/      # Mart de Marketing
-```
+├── dbt_project                                           # Projeto dbt 
+│   ├── dbt_packages                                      # Pacotes dbt
+│   │   └── dbt_utils                                     # dbt-utils package
+│   │       ├── CHANGELOG.md                              # Histórico de mudanças  
+│   │       ├── CONTRIBUTING.md                           # Guia de contribuição
+│   │       ├── dbt_project.yml                           # Configuração do pacote
+│   │       ├── dev-requirements.txt                      # Dependências para desenvolvimento 
+│   │       ├── docker-compose.yml                        # Configuração Docker estrutura
+│   │       ├── docs                                      # Documentação do pacote
+│   │       │   └── decisions                             # Decisões de design
+│   │       ├── etc                                       # Arquivos diversos
+│   │       │   └── dbt-logo.png                          # Logo do dbt
+│   │       ├── integration_tests                         # Testes de integração
+│   │       │   ├── ci                                    # Configuração CI
+│   │       │   ├── data                                  # Dados de teste
+│   │       │   ├── dbt_project.yml                       # Configuração do projeto de teste
+│   │       │   ├── macros                                # Macros do projeto de teste
+│   │       │   ├── models                                # Modelos do projeto de teste
+│   │       │   ├── packages.yml                          # Pacotes do projeto de teste
+│   │       │   ├── README.md                             # Documentação do projeto de teste
+│   │       │   └── tests                                 # Testes do projeto de teste
+│   │       ├── LICENSE                                   # Licença do pacote
+│   │       ├── macros                                    # Macros do pacote
+│   │       │   ├── generic_tests                         # Testes genéricos
+│   │       │   ├── jinja_helpers                         # Helpers Jinja
+│   │       │   ├── sql                                   # SQL Macros
+│   │       │   └── web                                   # Macros web
+│   │       ├── Makefile                                  # Makefile para tarefas comuns
+│   │       ├── pytest.ini                                # Configuração do pytest
+│   │       ├── README.md                                 # Documentação do pacote
+│   │       ├── RELEASE.md                                # Guia de lançamento
+│   │       ├── run_functional_test.sh                    # Script para testes funcionais
+│   │       ├── run_test.sh                               # Script para testes
+│   │       └── tests                                     # Testes do pacote
+│   │           ├── conftest.py                           # Configuração de testes
+│   │           └── __init__.py                           # Inicialização do pacote de testes
+│   ├── dbt_project.yml                                   # Configuração do projeto dbt
+│   ├── logs                                              # Logs do dbt
+│   │   └── dbt.log                                       # Log principal
+│   ├── macros                                            # Macros personalizados
+│   │   └── generate_schema_name.sql                      # Macro para geração de nomes de esquema
+│   ├── models                                            # Modelos dbt
+│   │   ├── marts                                         # Data Marts (Gold)
+│   │   │   ├── core                                      # Dimensões e fatos compartilhados
+│   │   │   │   ├── dim_customers.sql                     # Dimensão de Clientes
+│   │   │   │   ├── dim_date.sql                          # Dimensão de Datas
+│   │   │   │   ├── dim_employees.sql                     # Dimensão de Funcionários
+│   │   │   │   ├── dim_products.sql                      # Dimensão de Produtos
+│   │   │   │   └── fct_sales.sql                         # Fato de Vendas
+│   │   │   ├── customers                                 # Mart de Clientes
+│   │   │   │   └── mart_customer_analytics.sql           # Análises de Clientes
+│   │   │   ├── products                                  # Mart de Produtos
+│   │   │   │   └── mart_product_performance.sql          # Desempenho de Produtos
+│   │   │   └── sales                                     # Mart de Vendas
+│   │   │       └── mart_sales_summary.sql                # Resumo de Vendas
+│   │   ├── sources.yml                                   # Definições de fontes de dados
+│   │   └── staging                                       # Camada de preparação (Staging)
+│   │       ├── stg_customers.sql                         # Staging de Clientes
+│   │       ├── stg_employees.sql                         # Staging de Funcionários
+│   │       ├── stg_order_details.sql                     # Staging de Detalhes de Pedidos
+│   │       ├── stg_orders.sql                            # Staging de Pedidos
+│   │       └── stg_products.sql                          # Staging de Produtos
+│   ├── package-lock.yml                                  # Lockfile de pacotes
+│   ├── packages.yml                                      # Definição de pacotes
+│   ├── profiles.yml                                      # Perfis de conexão
+│   ├── README.md                                         # Documentação do projeto dbt
+│   ├── seeds                                             # Dados estáticos (CSV)
+│   ├── snapshots                                         # Snapshots de dados
+│   │   └── snp_customers.sql.bak                         # Snapshot de Clientes
+│   └── target                                            # Artefatos gerados pelo dbt
+│       ├── compiled                                      # SQL compilado
+│       │   └── northwind_dwh                             # Esquema do Data Warehouse
+│       │       └── models                                # Modelos compilados
+│       ├── graph.gpickle                                 # Grafo do projeto
+│       ├── graph_summary.json                            # Resumo do grafo
+│       ├── manifest.json                                 # Manifesto do projeto
+│       ├── partial_parse.msgpack                         # Parse parcial
+│       ├── run                                           # Resultados de execução
+│       │   └── northwind_dwh                             # Esquema do Data Warehouse
+│       │       └── models                                # Resultados dos modelos
+│       ├── run_results.json                              # Resultados da execução
+│       └── semantic_manifest.json                        # Manifesto semântico
+├── docker-compose.yaml                                   # Orquestração dos containers
+├── docs                                                  # Documentação do projeto
+│   ├── prints                                            # Imagens ilustrativas
+│   │   ├── A look at Dim Customers.png                   # Dimensão de Clientes 
+│   │   ├── A look at Dim Date.png                        # Dimensão de Datas
+│   │   ├── A look at Dim Employees.png                   # Dimensão de Funcionários
+│   │   ├── A look at Dim Products.png                    # Dimensão de Produtos
+│   │   ├── A look at Fct Sales.png                       # Fato de Vendas
+│   │   ├── A look at Mart Customer Analytics.png         # Mart de Clientes
+│   │   ├── A look at Mart Product Performance.png        # Mart de Produtos
+│   │   └── A look at Mart Sales Summary.png              # Mart de Vendas 
+│   └── RELATORIO_TECNICO.md                              # Relatório técnico do projeto
+├── infra                                                 # Infraestrutura como código
+│   └── dbt                                               # Configuração do ambiente dbt
+│       └── Dockerfile                                    # Dockerfile para o ambiente dbt
+├── instnwnd.sql                                          # Script de criação do banco Northwind
+├── README.md                                             # Documentação principal
+└── sources                                               # Dados de origem
+    ├── dwh                                               # Data Warehouse
+    │   └── 01-create  schema.sql                         # Script de criação do esquema DWH
+    ├── external_data                                     # Dados externos
+    │   ├── 01-Create Schema.sql                          # Script de criação do esquema de dados externos
+    │   └── 02-Seeds.sql                                  # Scripts de sementes de dados externos
+    ├── init
+    │   └── 00-init.sql                                   # Inicialização e permissões MySQL
+    └── northwind     
+        ├── 01-create_tables.sql                          # Script de criação das tabelas Northwind
+        ├── 02-populate.sql                               # Script de população das tabelas Northwind
+        ├── 03-procedures.sql                             # Script de criação de procedimentos armazenados Northwind
+        └── 04-constraints.sql                            # Script de criação de restrições Northwind
+
+45 directories, 67 files
+``` 
 
 ## 🚀 Como Executar
 
@@ -78,8 +182,8 @@ O projeto serve como guia prático para:
 #### 1. Clone o Repositório
 
 ```bash
-git clone <url-do-repositorio>
-cd <nome-do-repositorio>
+git clone https://github.com/Ficheles/northwind-dwh-dbt.git
+cd northwind-dwh-dbt
 ```
 
 #### 2. Configure as Variáveis de Ambiente
@@ -111,7 +215,7 @@ Aguarde alguns segundos para que o MySQL inicialize completamente.
 docker-compose ps
 ```
 
-Você deve ver os containers `northwind_mysql` e `northwind_dbt` em execução.
+Você deve ver os containers `northwind_mysql_db` e `northwind_dbt` em execução.
 
 #### 5. Valide a Conexão do dbt
 
@@ -172,7 +276,7 @@ Acesse `http://localhost:8080` para visualizar a documentação interativa.
 
 #### 9. Conecte uma Ferramenta de BI
 
-Use as seguintes credenciais para conectar Power BI, Tableau ou Metabase:
+Use as seguintes credenciais para conectar no Metabase:
 
 - **Host:** `localhost`
 - **Porta:** `3306`
@@ -458,7 +562,15 @@ dbt compile --models <nome_modelo>
 - [Star Schema: The Complete Reference - Christopher Adamson](https://www.kimballgroup.com/)
 - [Dimensional Modeling Techniques](https://www.kimballgroup.com/data-warehouse-business-intelligence-resources/kimball-techniques/dimensional-modeling-techniques/)
 
-## 📝 Licença
 
-Este projeto é destinado a fins educacionais.
+## 👥 Contribuidores
+
+- **Rafael Fideles** - [@ficheles](https://github.com/ficheles)
+- **Ronen R. S. Filho** - [@ronenfilho](https://github.com/ronenfilho/)
+
+---
+
+## 📄 Licença
+
+Este projeto foi desenvolvido para fins acadêmicos.
 
